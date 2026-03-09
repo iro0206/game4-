@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>落下物よけゲーム（スッキリ版）</title>
+<title>落下物よけゲーム 完全版</title>
 <style>
 body { margin:0; background:#222; color:white; font-family:sans-serif; text-align:center; }
 h1{margin:10px;}
@@ -21,7 +21,7 @@ button{ padding:8px 16px; font-size:16px; margin-top:10px; }
 <h1>落下物よけゲーム</h1>
 <div id="info">
 💣 赤い爆弾 = 避ける<br>
-🪙 黄色いコイン = 取るとポイント（ぷよん！）
+🪙 黄色いコイン = 取るとポイント
 </div>
 
 <div id="score">スコア: 0</div>
@@ -71,7 +71,7 @@ function spawn() {
 function update() {
   if(!running) return;
 
-  fallSpeed += 0.0005;
+  fallSpeed += 0.0005; // 少しずつ速くなる
 
   if(Math.random() < spawnSpeed) spawn();
 
@@ -144,7 +144,3 @@ update();
 </script>
 </body>
 </html>
-<div id="info">
-💣 赤い爆弾 = 避ける<br>
-🪙 黄色いコイン = 取るとポイント
-</div>
