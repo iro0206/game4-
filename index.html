@@ -2,201 +2,203 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>落下物よけゲーム</title>
+<title>落ちてくる物をよけるゲーム</title>
+
 <style>
 body{
-  margin:0;
-  background:#222;
-  color:white;
-  font-family:sans-serif;
-  text-align:center;
+margin:0;
+background:#222;
+color:white;
+font-family:sans-serif;
+text-align:center;
+}
+
+h1{
+margin:10px;
+}
+
+#info{
+font-size:18px;
+margin-bottom:10px;
 }
 
 #game{
-  position:relative;
-  width:400px;
-  height:600px;
-  margin:20px auto;
-  background:#111;
-  border:3px solid white;
-  overflow:hidden;
+width:400px;
+height:600px;
+background:#111;
+margin:auto;
+position:relative;
+overflow:hidden;
+border:4px solid white;
 }
 
 #player{
-  position:absolute;
-  bottom:10px;
-  left:180px;
-  width:40px;
-  height:40px;
-  font-size:30px;
-}
-
-.obstacle, .coin{
-  position:absolute;
-  width:40px;
-  height:40px;
-  font-size:30px;
+width:40px;
+height:40px;
+background:lime;
+position:absolute;
+bottom:10px;
+left:180px;
+border-radius:8px;
 }
 
 .obstacle{
-  color:red;
+width:50px;
+height:50px;
+background:red;
+position:absolute;
+border:3px solid white;
 }
 
 .coin{
-  color:gold;
+width:30px;
+height:30px;
+background:yellow;
+border-radius:50%;
+position:absolute;
+border:2px solid gold;
 }
 
 #score{
-  font-size:20px;
-  margin-top:10px;
+font-size:22px;
+margin:10px;
 }
 
 #gameover{
-  display:none;
-  font-size:28px;
-  margin-top:10px;
-  color:red;
-}
-
-button{
-  padding:10px 20px;
-  font-size:16px;
+display:none;
+font-size:28px;
+color:red;
 }
 </style>
+
 </head>
 <body>
 
 <h1>落下物よけゲーム</h1>
+
+<div id="info">
+🔴 赤いブロック = 当たるとゲームオーバー（避ける）<br>
+🟡 黄色いコイン = 取るとポイント
+</div>
+
 <div id="score">スコア: 0</div>
 
 <div id="game">
-  <div id="player">😀</div>
+<div id="player"></div>
 </div>
 
 <div id="gameover">ゲームオーバー</div>
-<button onclick="restart()">リスタート</button>
 
 <script>
-const game = document.getElementById("game");
-const player = document.getElementById("player");
-const scoreDisplay = document.getElementById("score");
-const gameoverText = document.getElementById("gameover");
 
-let playerX = 180;
-let score = 0;
-let objects = [];
-let gameRunning = true;
+const game = document.getElementById("game")
+const player = document.getElementById("player")
+const scoreText = document.getElementById("score")
+const gameoverText = document.getElementById("gameover")
 
-function createObject(){
-  const obj = document.createElement("div");
+let playerX = 180
+let score = 0
+let objects = []
+let running = true
 
-  if(Math.random() < 0.7){
-    obj.className = "obstacle";
-    obj.textContent = "❌";
-    obj.type = "obstacle";
-  }else{
-    obj.className = "coin";
-    obj.textContent = "🪙";
-    obj.type = "coin";
-  }
+function spawn(){
 
-  obj.x = Math.random() * 360;
-  obj.y = -40;
+let obj = document.createElement("div")
 
-  obj.style.left = obj.x + "px";
-  obj.style.top = obj.y + "px";
+if(Math.random()<0.7){
+obj.className="obstacle"
+obj.type="obstacle"
+obj.w=50
+obj.h=50
+}else{
+obj.className="coin"
+obj.type="coin"
+obj.w=30
+obj.h=30
+}
 
-  game.appendChild(obj);
-  objects.push(obj);
+obj.x=Math.random()*(400-obj.w)
+obj.y=-50
+
+obj.style.left=obj.x+"px"
+obj.style.top=obj.y+"px"
+
+game.appendChild(obj)
+objects.push(obj)
+
 }
 
 function update(){
-  if(!gameRunning) return;
 
-  if(Math.random() < 0.03){
-    createObject();
-  }
+if(!running) return
 
-  objects.forEach((obj,index)=>{
-    obj.y += 4;
-    obj.style.top = obj.y + "px";
-
-    const px = playerX;
-    const py = 550;
-
-    if(
-      obj.x < px + 40 &&
-      obj.x + 40 > px &&
-      obj.y < py + 40 &&
-      obj.y + 40 > py
-    ){
-      if(obj.type === "obstacle"){
-        gameOver();
-      }else{
-        score += 10;
-        scoreDisplay.textContent = "スコア: " + score;
-        obj.remove();
-        objects.splice(index,1);
-      }
-    }
-
-    if(obj.y > 600){
-      obj.remove();
-      objects.splice(index,1);
-    }
-  });
-
-  requestAnimationFrame(update);
+if(Math.random()<0.03){
+spawn()
 }
 
-function gameOver(){
-  gameRunning = false;
-  gameoverText.style.display = "block";
+objects.forEach((o,i)=>{
+
+o.y+=4
+o.style.top=o.y+"px"
+
+let px=playerX
+let py=550
+
+if(
+o.x < px+40 &&
+o.x+o.w > px &&
+o.y < py+40 &&
+o.y+o.h > py
+){
+
+if(o.type==="obstacle"){
+gameover()
 }
 
-function restart(){
-  objects.forEach(o=>o.remove());
-  objects=[];
-  score=0;
-  scoreDisplay.textContent="スコア: 0";
-  playerX=180;
-  player.style.left=playerX+"px";
-  gameRunning=true;
-  gameoverText.style.display="none";
-  update();
+if(o.type==="coin"){
+score+=10
+scoreText.textContent="スコア: "+score
+o.remove()
+objects.splice(i,1)
+}
+
+}
+
+if(o.y>620){
+o.remove()
+objects.splice(i,1)
+}
+
+})
+
+requestAnimationFrame(update)
+
+}
+
+function gameover(){
+running=false
+gameoverText.style.display="block"
 }
 
 document.addEventListener("keydown",e=>{
-  if(!gameRunning) return;
 
-  if(e.key==="ArrowLeft"){
-    playerX -= 20;
-  }
-  if(e.key==="ArrowRight"){
-    playerX += 20;
-  }
+if(!running) return
 
-  playerX = Math.max(0, Math.min(360, playerX));
-  player.style.left = playerX + "px";
-});
+if(e.key==="ArrowLeft"){
+playerX-=30
+}
 
-game.addEventListener("click",e=>{
-  if(!gameRunning) return;
+if(e.key==="ArrowRight"){
+playerX+=30
+}
 
-  const rect = game.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
+playerX=Math.max(0,Math.min(360,playerX))
+player.style.left=playerX+"px"
 
-  if(clickX < playerX){
-    playerX -= 40;
-  }else{
-    playerX += 40;
-  }
+})
 
-  playerX = Math.max(0, Math.min(360, playerX));
-  player.style.left = playerX + "px";
-});
+update()
 
-update();
 </script>
 
 </body>
