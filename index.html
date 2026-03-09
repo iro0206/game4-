@@ -1,344 +1,202 @@
-ゲーム
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>スーパーよけろゲーム</title>
-
+<title>落下物よけゲーム</title>
 <style>
 body{
-margin:0;
-background:#111;
-color:white;
-font-family:sans-serif;
-text-align:center;
+  margin:0;
+  background:#222;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
 }
 
-h1{
-margin:10px;
+#game{
+  position:relative;
+  width:400px;
+  height:600px;
+  margin:20px auto;
+  background:#111;
+  border:3px solid white;
+  overflow:hidden;
 }
 
-canvas{
-background:#222;
-border:3px solid white;
-touch-action:none;
+#player{
+  position:absolute;
+  bottom:10px;
+  left:180px;
+  width:40px;
+  height:40px;
+  font-size:30px;
 }
 
-#info{
-margin-top:10px;
+.obstacle, .coin{
+  position:absolute;
+  width:40px;
+  height:40px;
+  font-size:30px;
+}
+
+.obstacle{
+  color:red;
+}
+
+.coin{
+  color:gold;
+}
+
+#score{
+  font-size:20px;
+  margin-top:10px;
+}
+
+#gameover{
+  display:none;
+  font-size:28px;
+  margin-top:10px;
+  color:red;
+}
+
+button{
+  padding:10px 20px;
+  font-size:16px;
 }
 </style>
 </head>
-
 <body>
 
-<h1>スーパーよけろゲーム</h1>
-<canvas id="game" width="500" height="600"></canvas>
-<div id="info">
-← → 移動 / タップ移動<br>
-コイン⭐を取ろう！ 爆弾💣に注意
+<h1>落下物よけゲーム</h1>
+<div id="score">スコア: 0</div>
+
+<div id="game">
+  <div id="player">😀</div>
 </div>
 
+<div id="gameover">ゲームオーバー</div>
+<button onclick="restart()">リスタート</button>
+
 <script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const scoreDisplay = document.getElementById("score");
+const gameoverText = document.getElementById("gameover");
 
-const canvas = document.getElementById("game")
-const ctx = canvas.getContext("2d")
+let playerX = 180;
+let score = 0;
+let objects = [];
+let gameRunning = true;
 
-let player
-let obstacles
-let coins
-let bombs
-let boss
+function createObject(){
+  const obj = document.createElement("div");
 
-let score
-let lives
-let frame
-let keys={}
-let gameOver=false
+  if(Math.random() < 0.7){
+    obj.className = "obstacle";
+    obj.textContent = "❌";
+    obj.type = "obstacle";
+  }else{
+    obj.className = "coin";
+    obj.textContent = "🪙";
+    obj.type = "coin";
+  }
 
-function resetGame(){
+  obj.x = Math.random() * 360;
+  obj.y = -40;
 
-player={
-x:250,
-y:550,
-width:40,
-height:20,
-speed:6
-}
+  obj.style.left = obj.x + "px";
+  obj.style.top = obj.y + "px";
 
-obstacles=[]
-coins=[]
-bombs=[]
-boss=null
-
-score=0
-lives=3
-frame=0
-gameOver=false
-
-}
-
-resetGame()
-
-document.addEventListener("keydown",e=>{
-
-keys[e.key]=true
-
-if(gameOver && e.key==="r"){
-resetGame()
-}
-
-})
-
-document.addEventListener("keyup",e=>{
-keys[e.key]=false
-})
-
-canvas.addEventListener("touchstart",e=>{
-let rect=canvas.getBoundingClientRect()
-let x=e.touches[0].clientX-rect.left
-player.x=x-player.width/2
-})
-
-function playSound(freq){
-
-let ctxAudio=new (window.AudioContext||window.webkitAudioContext)()
-
-let osc=ctxAudio.createOscillator()
-let gain=ctxAudio.createGain()
-
-osc.connect(gain)
-gain.connect(ctxAudio.destination)
-
-osc.frequency.value=freq
-osc.start()
-
-gain.gain.exponentialRampToValueAtTime(
-0.0001,
-ctxAudio.currentTime+0.2
-)
-
-}
-
-function spawnObstacle(){
-
-let size=20+Math.random()*40
-
-obstacles.push({
-
-x:Math.random()*(canvas.width-size),
-y:-size,
-width:size,
-height:size,
-speed:2+score*0.002,
-color:`hsl(${Math.random()*360},70%,50%)`
-
-})
-
-}
-
-function spawnCoin(){
-
-coins.push({
-
-x:Math.random()*460,
-y:-20,
-size:15,
-speed:3
-
-})
-
-}
-
-function spawnBomb(){
-
-bombs.push({
-
-x:Math.random()*460,
-y:-20,
-size:20,
-speed:3
-
-})
-
-}
-
-function spawnBoss(){
-
-boss={
-x:200,
-y:50,
-width:100,
-height:30,
-dir:3,
-hp:20
-}
-
+  game.appendChild(obj);
+  objects.push(obj);
 }
 
 function update(){
+  if(!gameRunning) return;
 
-if(gameOver)return
+  if(Math.random() < 0.03){
+    createObject();
+  }
 
-frame++
+  objects.forEach((obj,index)=>{
+    obj.y += 4;
+    obj.style.top = obj.y + "px";
 
-if(keys["ArrowLeft"]) player.x-=player.speed
-if(keys["ArrowRight"]) player.x+=player.speed
+    const px = playerX;
+    const py = 550;
 
-player.x=Math.max(0,Math.min(canvas.width-player.width,player.x))
+    if(
+      obj.x < px + 40 &&
+      obj.x + 40 > px &&
+      obj.y < py + 40 &&
+      obj.y + 40 > py
+    ){
+      if(obj.type === "obstacle"){
+        gameOver();
+      }else{
+        score += 10;
+        scoreDisplay.textContent = "スコア: " + score;
+        obj.remove();
+        objects.splice(index,1);
+      }
+    }
 
-if(frame%30===0) spawnObstacle()
-if(frame%180===0) spawnCoin()
-if(frame%240===0) spawnBomb()
+    if(obj.y > 600){
+      obj.remove();
+      objects.splice(index,1);
+    }
+  });
 
-if(frame%2000===0 && !boss){
-spawnBoss()
+  requestAnimationFrame(update);
 }
 
-obstacles.forEach(o=>{
-
-o.y+=o.speed
-
-if(collide(player,o)){
-lives--
-playSound(120)
-
-o.y=700
-
-if(lives<=0) gameOver=true
+function gameOver(){
+  gameRunning = false;
+  gameoverText.style.display = "block";
 }
 
-})
-
-coins.forEach(c=>{
-
-c.y+=c.speed
-
-if(Math.abs(player.x-c.x)<25 && Math.abs(player.y-c.y)<25){
-
-score+=50
-playSound(800)
-c.y=700
-
+function restart(){
+  objects.forEach(o=>o.remove());
+  objects=[];
+  score=0;
+  scoreDisplay.textContent="スコア: 0";
+  playerX=180;
+  player.style.left=playerX+"px";
+  gameRunning=true;
+  gameoverText.style.display="none";
+  update();
 }
 
-})
+document.addEventListener("keydown",e=>{
+  if(!gameRunning) return;
 
-bombs.forEach(b=>{
+  if(e.key==="ArrowLeft"){
+    playerX -= 20;
+  }
+  if(e.key==="ArrowRight"){
+    playerX += 20;
+  }
 
-b.y+=b.speed
+  playerX = Math.max(0, Math.min(360, playerX));
+  player.style.left = playerX + "px";
+});
 
-if(Math.abs(player.x-b.x)<25 && Math.abs(player.y-b.y)<25){
+game.addEventListener("click",e=>{
+  if(!gameRunning) return;
 
-lives--
-playSound(60)
-b.y=700
+  const rect = game.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
 
-if(lives<=0) gameOver=true
+  if(clickX < playerX){
+    playerX -= 40;
+  }else{
+    playerX += 40;
+  }
 
-}
+  playerX = Math.max(0, Math.min(360, playerX));
+  player.style.left = playerX + "px";
+});
 
-})
-
-if(boss){
-
-boss.x+=boss.dir
-
-if(boss.x<0 || boss.x+boss.width>canvas.width)
-boss.dir*=-1
-
-if(frame%40===0){
-
-obstacles.push({
-x:boss.x+boss.width/2,
-y:boss.y+30,
-width:20,
-height:20,
-speed:4,
-color:"purple"
-})
-
-}
-
-}
-
-score++
-
-}
-
-function collide(a,b){
-
-return a.x<b.x+b.width &&
-a.x+a.width>b.x &&
-a.y<b.y+b.height &&
-a.y+a.height>b.y
-
-}
-
-function draw(){
-
-ctx.clearRect(0,0,canvas.width,canvas.height)
-
-ctx.fillStyle="white"
-ctx.fillText("Score: "+score,10,20)
-ctx.fillText("Lives: "+lives,420,20)
-
-ctx.fillStyle="deepskyblue"
-ctx.fillRect(player.x,player.y,player.width,player.height)
-
-obstacles.forEach(o=>{
-ctx.fillStyle=o.color
-ctx.fillRect(o.x,o.y,o.width,o.height)
-})
-
-coins.forEach(c=>{
-ctx.fillStyle="gold"
-ctx.beginPath()
-ctx.arc(c.x,c.y,c.size,0,Math.PI*2)
-ctx.fill()
-})
-
-bombs.forEach(b=>{
-ctx.fillStyle="red"
-ctx.beginPath()
-ctx.arc(b.x,b.y,b.size,0,Math.PI*2)
-ctx.fill()
-})
-
-if(boss){
-
-ctx.fillStyle="purple"
-ctx.fillRect(boss.x,boss.y,boss.width,boss.height)
-
-ctx.fillStyle="white"
-ctx.fillText("BOSS",boss.x+30,boss.y+20)
-
-}
-
-if(gameOver){
-
-ctx.fillStyle="white"
-ctx.font="40px sans-serif"
-ctx.fillText("GAME OVER",120,300)
-
-ctx.font="20px sans-serif"
-ctx.fillText("Rキーで再スタート",160,340)
-
-}
-
-}
-
-function loop(){
-
-update()
-draw()
-
-requestAnimationFrame(loop)
-
-}
-
-loop()
-
+update();
 </script>
 
 </body>
